@@ -6,6 +6,7 @@ URL = "http://books.toscrape.com"
 
 if __name__ == '__main__':
     def liburua(url):
+        ''' récupérer les informations de chaque livre '''
         urlss = str(url)
         res = requests.get(urlss)
         soup = BeautifulSoup(res.text, 'html.parser')
@@ -19,11 +20,12 @@ if __name__ == '__main__':
             category = str(soup.find('ul', {'class': 'breadcrumb'}).select('li')[2].text).replace("\n", '')
             rat = soup.find("p", class_="star-rating")["class"][1]
             image = "http://books.toscrape.com" + soup.img['src'][5:]
-            PHOTO = requests.get(image).content
+            ''' sauvegarde images couverture. Obtenir toutes les images + fichier .csv environ 2h '''
+            photo = requests.get(image).content
             garbitu = title.translate({ord(g): "" for g in "!@#$%^&*()[]{\r};:,./<>?\\|`~-=_+\"\'"})
             izenburu = garbitu.replace(" ", "_") + '.jpg'
             with open('P2/COUVERTURE/'+izenburu, 'wb') as img:
-                img.write(PHOTO)
+                img.write(photo)
         hiztegia = {
             'product_page_url': urlss,
             'universal_ product_code_upc': upc,
@@ -43,14 +45,16 @@ if __name__ == '__main__':
         df.to_csv(f"./P2/CSV/" + category + '.csv', encoding='utf-8-sig')
 
     def kategoria():
+        ''' récupération catégories '''
         res = requests.get(URL)
         soup = BeautifulSoup(res.text, 'html.parser')
         kategoriak = soup.find("ul", {"class": "nav nav-list"}).find_all("li")[1:]
         for category in kategoriak:
-            urlKategoriak = URL + '/' + category.a['href']
-            write_csv(urlAK(urlKategoriak), category.text.strip())
+            url_kategoriak = URL + '/' + category.a['href']
+            write_csv(url_ak(url_kategoriak), category.text.strip())
 
-    def urlAK(url):
+    def url_ak(url):
+        ''' parcours différentes pages '''
         dictionary = []
         res = requests.get(url)
         soup = BeautifulSoup(res.text, 'html.parser')
@@ -61,16 +65,17 @@ if __name__ == '__main__':
             links = URL + '/catalogue/' + link.replace("../../../", "")
             dictionary.append(liburua(links))
         try:
-            NextSt = soup.find('section').find('li', {'class': 'next'}).select('a')
-            NextPage = NextSt[0]['href']
-            split = url.rsplit("/", 1)
-            NextUrl = split[0] + str("/" + NextPage)
-            dictionary += urlAK(NextUrl)
+            next_section = soup.find('section').find('li', {'class': 'next'}).select('a')
+            next_page = next_section[0]['href']
+            plit = url.rsplit("/", 1)
+            next_url = plit[0] + str("/" + next_page)
+            dictionary += url_ak(next_url)
         except:
             pass
 
         return dictionary
 
+    ''' create folders to save data '''
     try:
         os.mkdir('P2')
     except:
@@ -85,5 +90,6 @@ if __name__ == '__main__':
         os.mkdir('P2/COUVERTURE')
     except:
         pass
-
+    
+    ''' run the code '''
     kategoria()
